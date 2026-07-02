@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>达人数据查询平台</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+  background: #f0f2f5;
+  min-height: 100vh;
+}
+
+/* ===== 顶部栏 ===== */
+.header {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  color: #fff;
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.header-left { display: flex; align-items: center; gap: 12px; }
+.header-left h1 { font-size: 18px; font-weight: 600; }
+.header-left .badge {
+  font-size: 11px; background: rgba(255,255,255,0.15);
+  padding: 2px 8px; border-radius: 10px;
+}
+.status-bar { display: flex; align-items: center; gap: 12px; }
+.status-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%; background: #ff4d4f;
+  transition: background 0.3s;
+}
+.status-dot.online { background: #52c41a; }
+.status-dot.checking { background: #faad14; animation: pulse 1s infinite; }
+@keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+.status-text { font-size: 13px; color: rgba(255,255,255,0.85); }
+
+/* ===== 主布局 ===== */
+.main {
+  max-width: 1100px; margin: 0 auto; padding: 24px;
+}
+
+/* ===== 搜索栏 ===== */
+.search-section {
+  background: #fff; border-radius: 10px;
+  padding: 20px 24px; box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+  margin-bottom: 20px;
+}
+.search-row {
+  display: flex; gap: 12px; align-items: flex-end;
+}
+.search-group { flex: 1; }
+.search-group label {
+  display: block; font-size: 13px; color: #888; margin-bottom: 6px;
+}
+.search-group input {
+  width: 100%; padding: 10px 14px;
+  border: 2px solid #e8e8e8; border-radius: 8px;
+  font-size: 15px; outline: none; transition: border-color 0.2s;
+}
+.search-group input:focus { border-color: #1677ff; }
+.btn-search {
+  padding: 10px 32px; height: 44px;
+  background: #1677ff; color: #fff;
+  border: none; border-radius: 8px;
+  font-size: 15px; cursor: pointer;
+  transition: background 0.2s;
+}
+.btn-search:hover { background: #4096ff; }
+.btn-search:disabled { background: #d9d9d9; cursor: not-allowed; }
+.search-hint {
+  margin-top: 8px; font-size: 12px; color: #bbb;
+}
+
+/* ===== 登录表单 ===== */
+.login-prompt {
+  background: #fff; border-radius: 10px;
+  padding: 40px 30px; text-align: center;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+  max-width: 420px; margin: 0 auto;
+}
+.login-prompt .icon { font-size: 56px; margin-bottom: 16px; }
+.login-prompt h3 { font-size: 18px; color: #333; margin-bottom: 8px; }
+.login-prompt p { font-size: 14px; color: #999; margin-bottom: 24px; }
+.login-form-group {
+  margin-bottom: 16px; text-align: left;
+}
+.login-form-group label {
+  display: block; font-size: 13px; color: #666; margin-bottom: 6px;
+}
+.login-form-group input {
+  width: 100%; padding: 11px 14px;
+  border: 2px solid #e8e8e8; border-radius: 8px;
+  font-size: 15px; outline: none; transition: border-color 0.2s;
+}
+.login-form-group input:focus { border-color: #1677ff; }
+.btn-primary {
+  width: 100%; padding: 12px;
+  background: #1677ff; color: #fff;
+  border: none; border-radius: 8px;
+  font-size: 15px; cursor: pointer;
+  transition: background 0.2s;
+}
+.btn-primary:hover { background: #4096ff; }
+.btn-primary:disabled { background: #d9d9d9; cursor: not-allowed; }
+.login-tip {
+  margin-top: 14px; font-size: 12px; color: #999; line-height: 1.5;
+}
+
+/* ===== 达人信息卡片 ===== */
+.talent-header {
+  background: #fff; border-radius: 10px;
+  padding: 20px 24px; box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+  margin-bottom: 16px;
+  display: flex; align-items: center; gap: 16px;
+}
+.talent-avatar {
+  width: 52px; height: 52px;
+  border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 22px; font-weight: 600;
+  flex-shrink: 0;
+}
+.talent-info { flex: 1; }
+.talent-name { font-size: 18px; font-weight: 600; color: #1a1a1a; }
+.talent-id { font-size: 13px; color: #999; margin-top: 2px; }
+.talent-id span { color: #1677ff; font-family: monospace; }
+
+/* ===== Tab 切换 ===== */
+.tabs {
+  display: flex; gap: 0;
+  background: #fff; border-radius: 10px 10px 0 0;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+  overflow: hidden;
+}
+.tab-btn {
+  flex: 1; padding: 14px;
+  border: none; background: transparent;
+  font-size: 14px; color: #888; cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+}
+.tab-btn:hover { color: #1677ff; background: #fafafa; }
+.tab-btn.active {
+  color: #1677ff; font-weight: 600;
+  border-bottom-color: #1677ff;
+}
+
+/* ===== 视图切换 ===== */
+.view-tabs {
+  display: flex; gap: 8px;
+  margin-bottom: 16px;
+}
+.view-tab-btn {
+  padding: 8px 20px;
+  border: 1px solid #e8e8e8;
+  background: #fff;
+  border-radius: 6px;
+  font-size: 14px; color: #666;
+  cursor: pointer; transition: all 0.2s;
+}
+.view-tab-btn:hover { color: #1677ff; border-color: #1677ff; }
+.view-tab-btn.active {
+  background: #1677ff; color: #fff;
+  border-color: #1677ff;
+}
+
+/* 对比表格 */
+.compare-table {
+  width: 100%; border-collapse: collapse;
+  font-size: 14px; background: #fff;
+  border-radius: 0 0 10px 10px; overflow: hidden;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+}
+.compare-table th, .compare-table td {
+  padding: 12px 16px; text-align: left;
+  border-bottom: 1px solid #f5f5f5;
+}
+.compare-table th {
+  background: #fafafa; color: #888;
+  font-weight: 500; font-size: 13px;
+}
+.compare-table td { color: #333; }
+.compare-table tr:hover td { background: #fafcff; }
+.compare-table .col-metric { width: 140px; }
+.compare-table .col-value { width: 180px; font-weight: 500; }
+.compare-table .col-standard { width: 200px; }
+.compare-table .pass { color: #52c41a; font-weight: 600; }
+.compare-table .fail { color: #ff4d4f; font-weight: 600; }
+.compare-table .gap { color: #ff4d4f; font-size: 12px; margin-left: 6px; }
+.compare-table .dash { color: #ccc; }
+.compare-table .result-row td { font-weight: 600; background: #f6ffed !important; }
+.compare-table .result-row.fail-row td { background: #fff1f0 !important; }
+.compare-summary {
+  display: flex; gap: 16px; margin-bottom: 16px;
+}
+.compare-summary .tag {
+  padding: 8px 16px; border-radius: 8px;
+  font-size: 14px; font-weight: 500;
+}
+.compare-summary .tag.pass { background: #f6ffed; color: #52c41a; border: 1px solid #b7eb8f; }
+.compare-summary .tag.fail { background: #fff1f0; color: #ff4d4f; border: 1px solid #ffa39e; }
+.data-panel {
+  background: #fff; border-radius: 0 0 10px 10px;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+  overflow: hidden;
+}
+.data-toolbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 20px; background: #fafafa;
+  border-bottom: 1px solid #f0f0f0;
+}
+.data-toolbar .date-range {
+  font-size: 12px; color: #999;
+}
+.btn-copy {
+  padding: 6px 16px; font-size: 13px;
+  background: #1677ff; color: #fff;
+  border: none; border-radius: 6px;
+  cursor: pointer; transition: background 0.2s;
+}
+.btn-copy:hover { background: #4096ff; }
+.btn-copy:active { transform: scale(0.96); }
+
+/* 竖列数据列表 */
+.data-list {
+  list-style: none; padding: 0; margin: 0;
+}
+.data-list li {
+  display: flex; align-items: baseline;
+  padding: 11px 20px;
+  border-bottom: 1px solid #f5f5f5;
+  font-size: 14px; line-height: 1.6;
+}
+.data-list li:last-child { border-bottom: none; }
+.data-list li:hover { background: #fafcff; }
+.data-list .label {
+  flex-shrink: 0; width: 130px;
+  color: #888; font-size: 13px;
+}
+.data-list .value {
+  flex: 1; color: #333;
+  word-break: break-all;
+}
+.val-rmb {
+  font-weight: 600; color: #f5222d;
+}
+.val-diamond {
+  color: #722ed1;
+}
+.val-count {
+  color: #333; font-weight: 500;
+}
+
+/* ===== 加载 ===== */
+.loading-overlay {
+  display: none;
+  text-align: center; padding: 40px;
+  background: #fff; border-radius: 10px;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+}
+.loading-overlay.show { display: block; }
+.spinner {
+  display: inline-block;
+  width: 32px; height: 32px;
+  border: 3px solid #e8e8e8;
+  border-top-color: #1677ff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-overlay p { margin-top: 10px; color: #999; font-size: 13px; }
+
+/* ===== Toast ===== */
+.toast {
+  position: fixed; top: 20px; left: 50%;
+  transform: translateX(-50%);
+  background: #1a1a1a; color: #fff;
+  padding: 10px 24px; border-radius: 8px;
+  font-size: 13px; z-index: 2000;
+  opacity: 0; transition: opacity 0.3s;
+  pointer-events: none;
+}
+.toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<!-- ===== 顶部栏 ===== -->
+<div class="header">
+  <div class="header-left">
+    <h1>📊 达人数据查询</h1>
+    <span class="badge">cv.bxyuer.com</span>
+  </div>
+  <div class="status-bar">
+    <span class="status-dot" id="statusDot"></span>
+    <span class="status-text" id="statusText">检测中...</span>
+  </div>
+</div>
+
+<!-- ===== Toast ===== -->
+<div class="toast" id="toast"></div>
+
+<!-- ===== 主内容 ===== -->
+<div class="main" id="mainContent">
+
+  <!-- 搜索栏（登录后才显示） -->
+  <div class="search-section" id="searchSection" style="display:none">
+    <div class="search-row">
+      <div class="search-group">
+        <label>输入达人ID进行查询</label>
+        <input type="text" id="talentIdInput" placeholder="请输入达人ID" onkeydown="if(event.key==='Enter')searchTalent()">
+      </div>
+      <button class="btn-search" id="btnSearch" onclick="searchTalent()" disabled>查询</button>
+    </div>
+    <div class="search-hint">输入ID后按回车或点击查询按钮</div>
+  </div>
+
+  <!-- 登录表单（未登录时显示） -->
+  <div class="login-prompt" id="loginPrompt">
+    <div class="icon">🔐</div>
+    <h3>请先登录</h3>
+    <p>输入 cv.bxyuer.com 的账号密码，后端会自动帮你登录</p>
+    <div class="login-form-group">
+      <label>手机号</label>
+      <input type="text" id="loginPhone" placeholder="请输入手机号" onkeydown="if(event.key==='Enter')startLogin()">
+    </div>
+    <div class="login-form-group">
+      <label>密码</label>
+      <input type="password" id="loginPassword" placeholder="请输入密码" onkeydown="if(event.key==='Enter')startLogin()">
+    </div>
+    <button class="btn-primary" id="btnLogin" onclick="startLogin()">立即登录</button>
+    <div class="login-tip">密码仅在本地用于登录，不会被保存或上传。</div>
+  </div>
+
+  <!-- 加载状态 -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner"></div>
+    <p>正在查询达人数据...</p>
+  </div>
+
+  <!-- 达人详情区 -->
+  <div id="talentDetail" style="display:none">
+    <!-- 达人基本信息 -->
+    <div class="talent-header" id="talentHeader">
+      <div class="talent-avatar" id="talentAvatar">?</div>
+      <div class="talent-info">
+        <div class="talent-name" id="talentName">--</div>
+        <div class="talent-id">ID: <span id="talentIdDisplay">--</span></div>
+      </div>
+    </div>
+
+    <!-- 视图切换（数据视图 / 达标对比） -->
+    <div class="view-tabs" id="viewTabs" style="display:none">
+      <button class="view-tab-btn active" onclick="switchView('data')">📋 数据明细</button>
+      <button class="view-tab-btn" onclick="switchView('compare')">🏆 达标对比</button>
+    </div>
+
+    <!-- 数据视图 -->
+    <div id="dataView">
+      <!-- 日/周/月 Tab -->
+      <div class="tabs">
+        <button class="tab-btn active" data-period="daily" onclick="switchTab('daily')">📅 日数据</button>
+        <button class="tab-btn" data-period="weekly" onclick="switchTab('weekly')">📆 周数据</button>
+        <button class="tab-btn" data-period="monthly" onclick="switchTab('monthly')">📈 月数据</button>
+      </div>
+
+      <!-- 数据列表 -->
+      <div class="data-panel">
+        <div class="data-toolbar">
+          <span class="date-range" id="dateRangeText"></span>
+          <button class="btn-copy" onclick="copyDataAsText()">📋 复制全部数据</button>
+        </div>
+        <ul class="data-list" id="dataTableBody">
+        </ul>
+      </div>
+    </div>
+
+    <!-- 达标对比视图 -->
+    <div id="compareView" style="display:none">
+      <div class="compare-summary" id="compareSummary"></div>
+      <div class="compare-table-wrap">
+        <table class="compare-table">
+          <thead>
+            <tr>
+              <th class="col-metric">指标</th>
+              <th class="col-value">数值</th>
+              <th class="col-standard">有效标准</th>
+              <th class="col-standard">优质标准</th>
+            </tr>
+          </thead>
+          <tbody id="compareTableBody">
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============ 状态 ============
+let isLoggedIn = false;
+let currentTalentId = null;
+let currentPeriod = 'daily';
+let currentView = 'data';
+let talentCache = {};
+let compareCache = null;
+
+// ============ 字段定义 ============
+const FIELD_DEFS = [
+  { key: 'nickname',                label: '达人昵称',         type: 'text',    icon: '👤' },
+  { key: 'talentId',                label: '达人ID',           type: 'text',    icon: '🆔' },
+  { key: 'totalOrderAmount',        label: '成单金额',         type: 'rmb',     icon: '💰', rawKey: 'totalOrderAmountDiamond' },
+  { key: 'orderCount',              label: '成单数',           type: 'count',   icon: '📦' },
+  { key: 'payUserCount',            label: '成单人数',         type: 'count',   icon: '👥' },
+  { key: 'netOrderUserCount',       label: '净下单用户数',     type: 'count',   icon: '✅' },
+  { key: 'refundDiamond',           label: '退款钻石',         type: 'diamond', icon: '💎' },
+  { key: 'actualAmount',            label: '实际金额',         type: 'rmb',     icon: '💵' },
+  { key: 'refundOrderCount',        label: '退款订单数',       type: 'count',   icon: '↩️' },
+  { key: 'repeatUserCount',         label: '复购用户数',       type: 'count',   icon: '🔄' },
+  { key: 'micAuditionCount',        label: '上麦试音次数',     type: 'count',   icon: '🎤' },
+  { key: 'micDays',                 label: '上麦天数',         type: 'count',   icon: '📅' },
+  { key: 'dispatchRewardAmount',    label: '派单厅打赏流水',   type: 'rmb',     icon: '🎁', rawKey: 'dispatchRewardAmount' },
+  { key: 'dispatchRewardUserCount', label: '派单厅打赏用户数', type: 'count',   icon: '🙋' },
+];
+
+// ============ 工具函数 ============
+function diamondToRMB(diamond) {
+  const d = parseInt(diamond) || 0;
+  return (d / 100).toFixed(2);
+}
+
+function formatDiamond(d) {
+  const num = parseInt(d) || 0;
+  if (num >= 10000) return (num / 10000).toFixed(1) + '万钻石';
+  return num.toLocaleString() + '钻石';
+}
+
+function formatNumber(n) {
+  const num = parseInt(n) || 0;
+  return num.toLocaleString();
+}
+
+function getValue(data, key) {
+  if (data[key] !== undefined) return data[key];
+  const camelKey = key.replace(/_([a-z])/g, (m, c) => c.toUpperCase());
+  if (data[camelKey] !== undefined) return data[camelKey];
+  return '--';
+}
+
+function renderValue(def, data) {
+  const val = getValue(data, def.key);
+
+  if (def.type === 'rmb') {
+    const rmb = (parseFloat(val) || 0).toFixed(2);
+    let hint = '';
+    if (def.key === 'totalOrderAmount') {
+      const dia = getValue(data, 'totalOrderAmountDiamond');
+      if (dia !== '--') hint = `<span style="font-size:12px;color:#999">(${formatDiamond(dia)})</span>`;
+    }
+    return `<span class="val-rmb">¥${rmb}</span> ${hint}`;
+  }
+
+  if (def.type === 'diamond') {
+    return `<span class="val-diamond">${formatDiamond(val)}</span>`;
+  }
+
+  if (def.type === 'count') {
+    return `<span class="val-count">${formatNumber(val)}</span>`;
+  }
+
+  return `<span>${val || '--'}</span>`;
+}
+
+// ============ 初始化 ============
+async function init() {
+  await checkStatus();
+  setInterval(checkStatus, 30000);
+}
+
+async function checkStatus() {
+  const dot = document.getElementById('statusDot');
+  const text = document.getElementById('statusText');
+  dot.className = 'status-dot checking';
+  text.textContent = '检测中...';
+
+  try {
+    const resp = await fetch('/api/status');
+    const data = await resp.json();
+
+    isLoggedIn = data.logged_in;
+    if (data.logged_in) {
+      dot.className = 'status-dot online';
+      text.textContent = data.message;
+      document.getElementById('searchSection').style.display = 'block';
+      document.getElementById('loginPrompt').style.display = 'none';
+      document.getElementById('btnSearch').disabled = false;
+    } else {
+      dot.className = 'status-dot offline';
+      text.textContent = data.message;
+      document.getElementById('searchSection').style.display = 'none';
+      document.getElementById('loginPrompt').style.display = 'block';
+      document.getElementById('talentDetail').style.display = 'none';
+      document.getElementById('btnSearch').disabled = true;
+    }
+  } catch(e) {
+    dot.className = 'status-dot offline';
+    text.textContent = '服务连接失败';
+    document.getElementById('searchSection').style.display = 'none';
+    document.getElementById('loginPrompt').style.display = 'block';
+    document.getElementById('btnSearch').disabled = true;
+  }
+}
+
+// ============ 登录 ============
+async function startLogin() {
+  const phone = document.getElementById('loginPhone').value.trim();
+  const password = document.getElementById('loginPassword').value.trim();
+  const btn = document.getElementById('btnLogin');
+
+  if (!phone || !password) {
+    showToast('请输入手机号和密码');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = '登录中...';
+  showToast('正在自动登录，请稍候...');
+
+  try {
+    const resp = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone, password })
+    });
+    const data = await resp.json();
+
+    if (!data.success) {
+      showToast(data.message || '登录失败');
+      btn.disabled = false;
+      btn.textContent = '立即登录';
+      return;
+    }
+
+    showToast(data.message || '正在登录...');
+    await pollLoginStatus();
+  } catch(e) {
+    showToast('登录请求失败: ' + e.message);
+    btn.disabled = false;
+    btn.textContent = '立即登录';
+  }
+}
+
+async function pollLoginStatus() {
+  const btn = document.getElementById('btnLogin');
+  for (let i = 0; i < 60; i++) {
+    await sleep(1000);
+    try {
+      const resp = await fetch('/api/login/status');
+      const data = await resp.json();
+      if (data.done) {
+        showToast(data.success ? '登录成功！' : (data.message || '登录失败'));
+        btn.disabled = false;
+        btn.textContent = '立即登录';
+        await checkStatus();
+        return;
+      }
+    } catch(e) {}
+  }
+  showToast('登录超时');
+  btn.disabled = false;
+  btn.textContent = '立即登录';
+}
+
+// ============ 查询达人 ============
+async function searchTalent() {
+  if (!isLoggedIn) {
+    showToast('请先登录');
+    return;
+  }
+
+  const talentId = document.getElementById('talentIdInput').value.trim();
+  if (!talentId) {
+    showToast('请输入达人ID');
+    return;
+  }
+
+  currentTalentId = talentId;
+  currentPeriod = 'daily';
+  currentView = 'data';
+  talentCache = {};
+  compareCache = null;
+
+  // 重置视图切换
+  document.getElementById('viewTabs').style.display = 'flex';
+  document.querySelectorAll('.view-tab-btn').forEach((b, i) => b.classList.toggle('active', i === 0));
+  document.getElementById('dataView').style.display = 'block';
+  document.getElementById('compareView').style.display = 'none';
+
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector('[data-period="daily"]').classList.add('active');
+
+  document.getElementById('talentName').textContent = '加载中...';
+  document.getElementById('talentIdDisplay').textContent = talentId;
+  document.getElementById('talentAvatar').textContent = talentId.slice(0, 2).toUpperCase();
+
+  await fetchTalentData('daily');
+}
+
+function switchView(view) {
+  if (view === currentView) return;
+  currentView = view;
+
+  document.querySelectorAll('.view-tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.view-tab-btn').forEach((b, i) => {
+    if ((view === 'data' && i === 0) || (view === 'compare' && i === 1)) b.classList.add('active');
+  });
+
+  if (view === 'data') {
+    document.getElementById('dataView').style.display = 'block';
+    document.getElementById('compareView').style.display = 'none';
+  } else {
+    document.getElementById('dataView').style.display = 'none';
+    document.getElementById('compareView').style.display = 'block';
+    if (!compareCache) {
+      fetchCompareData();
+    } else {
+      renderCompareTable(compareCache);
+    }
+  }
+}
+
+async function fetchCompareData() {
+  if (!currentTalentId) return;
+
+  document.getElementById('loadingOverlay').classList.add('show');
+  try {
+    const resp = await fetch(`/api/talent/${currentTalentId}/compare`);
+    const result = await resp.json();
+
+    if (resp.status === 401 || result.error === 'need_login') {
+      showToast('登录已过期，请重新登录');
+      await checkStatus();
+      return;
+    }
+
+    if (result.success && result.data) {
+      compareCache = result.data;
+      renderCompareTable(compareCache);
+    } else {
+      showToast('对比查询失败: ' + (result.message || '未知错误'));
+    }
+  } catch(e) {
+    showToast('请求失败: ' + e.message);
+  } finally {
+    document.getElementById('loadingOverlay').classList.remove('show');
+  }
+}
+
+function renderCompareStandard(std) {
+  if (!std) return '<span class="dash">—</span>';
+  const passIcon = std.pass ? '✅' : '❌';
+  const cls = std.pass ? 'pass' : 'fail';
+  const gap = std.short ? `<span class="gap">${std.short}</span>` : '';
+  return `<span class="${cls}">${passIcon} ${std.threshold}</span>${gap}`;
+}
+
+function renderCompareTable(data) {
+  const talent = data.talent || {};
+  const comparison = data.comparison || {};
+  const rows = comparison.rows || [];
+  const dateRange = data.dateRange || {};
+
+  // 更新头部信息
+  document.getElementById('talentName').textContent = talent.nickname || 'ID: ' + currentTalentId;
+  document.getElementById('talentIdDisplay').textContent = currentTalentId;
+  const avatarEl = document.getElementById('talentAvatar');
+  if (talent.avatar) {
+    avatarEl.innerHTML = `<img src="${talent.avatar}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
+  } else {
+    avatarEl.textContent = String(talent.nickname || currentTalentId).slice(0, 2).toUpperCase();
+  }
+
+  // 汇总标签
+  const effPass = comparison.effective_pass;
+  const qtyPass = comparison.quality_pass;
+  const summaryHtml = `
+    <div class="tag ${effPass ? 'pass' : 'fail'}">有效达人：${effPass ? '已达标' : '未达标'}</div>
+    <div class="tag ${qtyPass ? 'pass' : 'fail'}">优质达人：${qtyPass ? '已达标' : '未达标'}</div>
+    <div class="tag" style="background:#f5f5f5;color:#666;border:1px solid #e8e8e8">统计周期：${dateRange.start || ''} ~ ${dateRange.end || ''}</div>
+  `;
+  document.getElementById('compareSummary').innerHTML = summaryHtml;
+
+  // 表格行
+  let html = '';
+  for (const row of rows) {
+    html += `<tr>
+      <td class="col-metric">${row.label}</td>
+      <td class="col-value">${row.value}</td>
+      <td class="col-standard">${renderCompareStandard(row.effective)}</td>
+      <td class="col-standard">${renderCompareStandard(row.quality)}</td>
+    </tr>`;
+  }
+  // 结果行
+  html += `<tr class="result-row ${effPass && qtyPass ? '' : 'fail-row'}">
+    <td class="col-metric">综合结果</td>
+    <td class="col-value">—</td>
+    <td class="col-standard">${effPass ? '<span class="pass">✅ 已达标</span>' : '<span class="fail">❌ 未达标</span>'}</td>
+    <td class="col-standard">${qtyPass ? '<span class="pass">✅ 已达标</span>' : '<span class="fail">❌ 未达标</span>'}</td>
+  </tr>`;
+  document.getElementById('compareTableBody').innerHTML = html;
+  document.getElementById('talentDetail').style.display = 'block';
+}
+
+
+async function switchTab(period) {
+  if (period === currentPeriod && talentCache[period]) return;
+
+  currentPeriod = period;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector(`[data-period="${period}"]`).classList.add('active');
+
+  if (talentCache[period]) {
+    renderDataTable(talentCache[period]);
+  } else {
+    await fetchTalentData(period);
+  }
+}
+
+async function fetchTalentData(period) {
+  document.getElementById('loadingOverlay').classList.add('show');
+  document.getElementById('talentDetail').style.display = 'none';
+
+  try {
+    const resp = await fetch(`/api/talent/${currentTalentId}?period=${period}`);
+    const result = await resp.json();
+
+    if (resp.status === 401 || result.error === 'need_login') {
+      showToast('登录已过期，请重新登录');
+      await checkStatus();
+      return;
+    }
+
+    if (result.success && result.data) {
+      talentCache[period] = result.data;
+      renderDataTable(result.data);
+    } else {
+      showToast('查询失败: ' + (result.message || '未知错误'));
+    }
+  } catch(e) {
+    showToast('请求失败: ' + e.message);
+  } finally {
+    document.getElementById('loadingOverlay').classList.remove('show');
+  }
+}
+
+function renderDataTable(data) {
+  const actualData = data.data || data;
+  const talentMeta = data.talent || actualData;
+
+  const nickname = talentMeta.nickname || actualData.nickname || 'ID: ' + currentTalentId;
+  const talentId = actualData.talentId || currentTalentId;
+  const avatarUrl = talentMeta.avatar;
+
+  document.getElementById('talentName').textContent = nickname;
+  document.getElementById('talentIdDisplay').textContent = talentId;
+  const avatarEl = document.getElementById('talentAvatar');
+  if (avatarUrl) {
+    avatarEl.innerHTML = `<img src="${avatarUrl}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
+  } else {
+    avatarEl.textContent = String(nickname).slice(0, 2).toUpperCase();
+  }
+
+  // 日期范围
+  const dateRange = data.dateRange || {};
+  if (dateRange.start && dateRange.end) {
+    const periodNames = { daily: '日数据', weekly: '周数据', monthly: '月数据' };
+    document.getElementById('dateRangeText').textContent =
+      `${periodNames[currentPeriod] || ''}  ${dateRange.start} ~ ${dateRange.end}`;
+  } else {
+    document.getElementById('dateRangeText').textContent = '';
+  }
+
+  let html = '';
+  for (const def of FIELD_DEFS) {
+    html += `<li>
+      <span class="label">${def.label}</span>
+      <span class="value">${renderValue(def, actualData)}</span>
+    </li>`;
+  }
+  document.getElementById('dataTableBody').innerHTML = html;
+  document.getElementById('talentDetail').style.display = 'block';
+}
+
+// ============ 复制数据为纯文本 ============
+function getPlainTextValue(def, data) {
+  const val = getValue(data, def.key);
+  if (def.type === 'rmb') {
+    const rmb = (parseFloat(val) || 0).toFixed(2);
+    if (def.key === 'totalOrderAmount') {
+      const dia = getValue(data, 'totalOrderAmountDiamond');
+      if (dia !== '--') return `¥${rmb}（${formatDiamond(dia)}）`;
+    }
+    return `¥${rmb}`;
+  }
+  if (def.type === 'diamond') return formatDiamond(val);
+  if (def.type === 'count') return formatNumber(val);
+  return val || '--';
+}
+
+function copyDataAsText() {
+  const data = talentCache[currentPeriod];
+  if (!data) { showToast('暂无数据可复制'); return; }
+  const actualData = data.data || data;
+  const talentMeta = data.talent || actualData;
+
+  const periodNames = { daily: '日数据', weekly: '周数据', monthly: '月数据' };
+  const dateRange = data.dateRange || {};
+  let text = '';
+  text += `${periodNames[currentPeriod] || ''}`;
+  if (dateRange.start && dateRange.end) text += `（${dateRange.start} ~ ${dateRange.end}）`;
+  text += '\n';
+
+  for (const def of FIELD_DEFS) {
+    const val = getPlainTextValue(def, actualData);
+    text += `${def.label}：${val}\n`;
+  }
+
+  // 去掉末尾多余换行
+  text = text.trimEnd();
+
+  // 复制到剪贴板
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => {
+      showToast('已复制到剪贴板，可直接粘贴发送');
+    }).catch(() => {
+      fallbackCopy(text);
+    });
+  } else {
+    fallbackCopy(text);
+  }
+}
+
+function fallbackCopy(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.left = '-9999px';
+  document.body.appendChild(ta);
+  ta.select();
+  try {
+    document.execCommand('copy');
+    showToast('已复制到剪贴板，可直接粘贴发送');
+  } catch(e) {
+    showToast('复制失败，请手动选择文本复制');
+  }
+  document.body.removeChild(ta);
+}
+
+// ============ 辅助 ============
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 3000);
+}
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// 启动
+init();
+</script>
+
+</body>
+</html>
